@@ -28,7 +28,7 @@
     renderer.setSize(width, height);
 
     var terrainLoader = new THREE.TerrainLoader();
-    terrainLoader.load('../assets/jotunheimen.bin', function(data) {
+    terrainLoader.load('https://benna100.github.io/house-3d-model-three-js/assets/jotunheimen.bin', function(data) {
 
         var geometry = new THREE.PlaneGeometry(60, 60, 199, 199);
 
@@ -37,9 +37,10 @@
         }
 
         var material = new THREE.MeshPhongMaterial({
-            map: THREE.ImageUtils.loadTexture('../assets/jotunheimen-texture.jpg')
+            map: THREE.ImageUtils.loadTexture('https://benna100.github.io/house-3d-model-three-js/assets/jotunheimen-texture.jpg')
         });
 
+        //var plane = new THREE.Mesh(geometry, material);
         var plane = new THREE.Mesh(geometry, material);
         scene.add(plane);
 
