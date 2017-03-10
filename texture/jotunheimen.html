@@ -30,14 +30,14 @@
     var terrainLoader = new THREE.TerrainLoader();
     terrainLoader.load('https://benna100.github.io/house-3d-model-three-js/assets/721/DSM_1km_6210_721_subset.bin', function(data) {
 
-        var geometry = new THREE.PlaneGeometry(60, 60, 499, 499);
+        var geometry = new THREE.PlaneGeometry(60, 60, 199, 199);
 
         for (var i = 0, l = geometry.vertices.length; i < l; i++) {
             geometry.vertices[i].z = data[i] / 65535 * 5;
         }
 
         var material = new THREE.MeshPhongMaterial({
-            map: THREE.ImageUtils.loadTexture('https://benna100.github.io/house-3d-model-three-js/assets/DSM_1km_6210_721.PNG')
+            map: THREE.ImageUtils.loadTexture('https://benna100.github.io/house-3d-model-three-js/assets/721/DSM_1km_6210_721_subset.png')
         });
 
         //var plane = new THREE.Mesh(geometry, material);
