@@ -10,14 +10,11 @@ camera.position.set(0, -30, 30);
 var particleMaterial;
 
 particleMaterial = new THREE.SpriteCanvasMaterial({
-
     color: 0x000000,
     program: function(context) {
-
         context.beginPath();
         context.arc(0, 0, 0.5, 0, PI2, true);
         context.fill();
-
     }
 
 });
@@ -36,25 +33,6 @@ terrainLoader.load('https://benna100.github.io/house-3d-model-three-js/assets/72
     for (var i = 0, l = geometry.vertices.length; i < l; i++) {
         geometry.vertices[i].z = data[i] / 65535 * offsetheight;
     }
-    //loadtexture
-    //var texture = THREE.TextureLoader('https://benna100.github.io/house-3d-model-three-js/assets/721/DSM_1km_6210_721_subset.png');
-    //var texture = new THREE.TextureLoader().load(  );
-    //texture.offset.x = 0.015; // positive, texture towards left
-    //texture.offset.y = 0.01;
-    /*
-    var textureLoader = new THREE.TextureLoader();
-    textureLoader.load("http://benna100.github.io/house-3d-model-three-js/assets/721/DSM_1km_6210_721_subset.png", function(texture){
-        console.log(texture);
-        console.log('loaded');
-        // The actual texture is returned in the event.content
-        //var randomTexture = new THREE.MeshBasicMaterial( { color: Math.random() * 0xffffff, opacity: 0.5 } );
-
-        plane = new THREE.Mesh(geometry, texture);
-        //plane = new THREE.Mesh(geometry, material);
-        scene.add(plane);
-    });
-    */
-
 
 
     // instantiate a loader
@@ -63,24 +41,20 @@ terrainLoader.load('https://benna100.github.io/house-3d-model-three-js/assets/72
     // load a resource
     loader.load(
         // resource URL
-        'http://benna100.github.io/house-3d-model-three-js/assets/721/DSM_1km_6210_721_subset.png',
+        '../assets/721/DSM_1km_6210_721_subset.png',
         // Function when resource is loaded
         function(texture) {
 
             console.log(texture);
             // do something with the texture
-            
-
-            setTimeout((function() {
-                console.log(texture);
-                var material = new THREE.MeshBasicMaterial( {
-                    map: texture
-                 });
-                plane = new THREE.Mesh(geometry, material);
-                scene.add(plane);
-            }).bind(this), 2000);
+            texture.offset.x = 0.015;
+            texture.offset.y = 0.005;
+            var material = new THREE.MeshBasicMaterial( {
+                map: texture
+             });
+            plane = new THREE.Mesh(geometry, material);
+            scene.add(plane);
             var randomTexture = new THREE.MeshBasicMaterial({ color: Math.random() * 0xffffff, opacity: 0.5 });
-
 
         },
         // Function called when download progresses
@@ -94,17 +68,6 @@ terrainLoader.load('https://benna100.github.io/house-3d-model-three-js/assets/72
     );
 
 
-
-
-    /*
-            var material = new THREE.MeshPhongMaterial({
-                map: texture,
-            });
-    */
-    //var plane = new THREE.Mesh(geometry, material);
-
-
-
 });
 
 
@@ -112,7 +75,7 @@ var controls = new THREE.TrackballControls(camera);
 
 raycaster = new THREE.Raycaster();
 mouse = new THREE.Vector2();
-
+ini = 0;
 
 
 document.getElementById('webgl').addEventListener('click', function(event) {
@@ -125,29 +88,27 @@ document.getElementById('webgl').addEventListener('click', function(event) {
 
         //  intersects[ 0 ].object.material.color.setHex( Math.random() * 0xffffff );
 
-        //var particle = new THREE.Sprite( particleMaterial );
-
-        //particle.position.copy( intersects[ 0 ].point );
         console.log(intersects[0].point);
 
-        //particle.scale.x = particle.scale.y = 16;
-        /*
-            scene.add( particle );
 
-            
-*/
+        var width = 0.5;
+        var height = 1.5;
+        var depth = 0.1;
+        var geometry = new THREE.CubeGeometry(height, width, depth);
 
+        //geometry.rotateY(ini);
+        console.log(ini);
+        geometry.rotateY(2.4);
+        geometry.rotateZ(2.6);
 
-        var geometry = new THREE.CubeGeometry(1, 1, 1);
-
-        var material = new THREE.MeshBasicMaterial({ color: 0xCC66FF });
+        ini += 0.1;
+        var material = new THREE.MeshBasicMaterial({ color: 0x000000 });
 
         var mesh = new THREE.Mesh(geometry, material);
-
-        //scene is global
-        //scene.add(mesh);
-
-        //cube = new THREE.Mesh( new THREE.CubeGeometry( 200, 200, 200 ), new THREE.MeshNormalMaterial() );
+/*
+        var xAxis = new THREE.Vector3(1,0,0);
+        rotateAroundWorldAxis(mesh, xAxis, Math.PI / 190);
+*/
         mesh.position.x = intersects[0].point.x;
         mesh.position.y = intersects[0].point.y;
         mesh.position.z = intersects[0].point.z;
@@ -166,4 +127,45 @@ function render() {
     controls.update();
     requestAnimationFrame(render);
     renderer.render(scene, camera);
+}
+
+
+
+var rotObjectMatrix;
+function rotateAroundObjectAxis(object, axis, radians) {
+    rotObjectMatrix = new THREE.Matrix4();
+    rotObjectMatrix.makeRotationAxis(axis.normalize(), radians);
+
+    // old code for Three.JS pre r54:
+    // object.matrix.multiplySelf(rotObjectMatrix);      // post-multiply
+    // new code for Three.JS r55+:
+    object.matrix.multiply(rotObjectMatrix);
+
+    // old code for Three.js pre r49:
+    // object.rotation.getRotationFromMatrix(object.matrix, object.scale);
+    // old code for Three.js r50-r58:
+    // object.rotation.setEulerFromRotationMatrix(object.matrix);
+    // new code for Three.js r59+:
+    object.rotation.setFromRotationMatrix(object.matrix);
+}
+
+var rotWorldMatrix;
+// Rotate an object around an arbitrary axis in world space       
+function rotateAroundWorldAxis(object, axis, radians) {
+    rotWorldMatrix = new THREE.Matrix4();
+    rotWorldMatrix.makeRotationAxis(axis.normalize(), radians);
+
+    // old code for Three.JS pre r54:
+    //  rotWorldMatrix.multiply(object.matrix);
+    // new code for Three.JS r55+:
+    rotWorldMatrix.multiply(object.matrix);                // pre-multiply
+
+    object.matrix = rotWorldMatrix;
+
+    // old code for Three.js pre r49:
+    // object.rotation.getRotationFromMatrix(object.matrix, object.scale);
+    // old code for Three.js pre r59:
+    // object.rotation.setEulerFromRotationMatrix(object.matrix);
+    // code for r59+:
+    object.rotation.setFromRotationMatrix(object.matrix);
 }
