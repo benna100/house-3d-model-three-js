@@ -24,11 +24,12 @@ renderer.setSize(width, height);
 
 var terrainLoader = new THREE.TerrainLoader();
 var plane;
+var geometry;
 // gdalinfo -mm DSM_1km_6210_721.tif  
 // gdal_translate -scale 600 1905 0 65535 -outsize 300 285 -ot UInt16 -of ENVI DSM_1km_6210_721.tif DSM_1km_6210_721.bin
 terrainLoader.load('https://benna100.github.io/house-3d-model-three-js/assets/721/DSM_1km_6210_721_subset.bin', function(data) {
     var offsetheight = 10;
-    var geometry = new THREE.PlaneGeometry(60, 60, 199, 199);
+    geometry = new THREE.PlaneGeometry(60, 60, 199, 199);
 
     for (var i = 0, l = geometry.vertices.length; i < l; i++) {
         geometry.vertices[i].z = data[i] / 65535 * offsetheight;
@@ -85,41 +86,105 @@ document.getElementById('webgl').addEventListener('click', function(event) {
     var intersects = raycaster.intersectObjects([plane]);
 
     if (intersects.length > 0) {
+/*
+        var width = 0.25;
+        var height = 0.75;
+        var depth = 0.05;
+        */
 
-        //  intersects[ 0 ].object.material.color.setHex( Math.random() * 0xffffff );
+        var newArray = geometry.vertices.slice();
+        var sortedVertices = newArray.sort(function(a, b){
+            var a1 = intersects[0].point.x - a.x;
+            var a2 = intersects[0].point.y - a.y;
+            var distToAPoint = Math.sqrt( a1*a1 + a2*a2 );
 
-        console.log(intersects[0].point);
+            var b1 = intersects[0].point.x - b.x;
+            var b2 = intersects[0].point.y - b.y;
+            var distToBPoint = Math.sqrt( b1*b1 + b2*b2 );
+            // maybe var d = a.distanceTo( b );
+            if(distToAPoint < distToBPoint){
+                return -1;
+            }else{
+                return 1;
+            }
+        });
+
+        var numberOfClosestVertices = 30;
+        var closestVertices = sortedVertices.slice(0, numberOfClosestVertices);
+
+        // show the closest vertices
+        closestVertices.forEach(function(vertecy) {
+            addCube({x: vertecy.x, y: vertecy.y, z: vertecy.z}, 0.2, 0.2, 0.2, 0x66FF00);
+        });
+
+        var totalX = 0;
+        var totalY = 0;
+        var totalZ = 0;
+        closestVertices.forEach(function(vector){
+            console.log(vector);
+            totalX += vector.x;
+            totalY += vector.y;
+            totalZ += vector.z;
+        });
+
+        var averageVector = new THREE.Vector3( totalX/closestVertices.length, totalY/closestVertices.length, totalZ/closestVertices.length);
+
+        //console.log(averageVector);
+        //console.log(averageVector.normalize());
+        var averageVector = new THREE.Vector3( 0.5, 0.5, 0);
+        //console.log(averageVector);
+        
+        
+
+        //var geometry = new THREE.CylinderGeometry(2, 2, vector.length(), 4, 4);
+        //var mesh = new THREE.Mesh(geometry, someMaterial);
+        var axis = new THREE.Vector3(0, 1, 0);
+        
+
+
+        // rotate the panels to fit the roof. 
 
 
         var width = 0.5;
         var height = 1.5;
-        var depth = 0.1;
-        var geometry = new THREE.CubeGeometry(height, width, depth);
-
-        //geometry.rotateY(ini);
-        console.log(ini);
-        geometry.rotateY(2.4);
-        geometry.rotateZ(2.6);
-
-        ini += 0.1;
+        var depth = 0.05;
+        var geometry2 = new THREE.CubeGeometry(width, height, depth);
         var material = new THREE.MeshBasicMaterial({ color: 0x000000 });
 
-        var mesh = new THREE.Mesh(geometry, material);
-/*
-        var xAxis = new THREE.Vector3(1,0,0);
-        rotateAroundWorldAxis(mesh, xAxis, Math.PI / 190);
-*/
+        var mesh = new THREE.Mesh(geometry2, material);
+
+        //geometry2.rotateY(2.4);
+        //geometry2.rotateZ(2.6);
+
         mesh.position.x = intersects[0].point.x;
         mesh.position.y = intersects[0].point.y;
         mesh.position.z = intersects[0].point.z;
-        scene.add(mesh);
+
+        // rotate mesh in the direction of the averagevector direction
+        mesh.quaternion.setFromUnitVectors(axis, averageVector.clone().normalize());
+        //scene.add(mesh);
 
     }
 }, false);
 
+
+function addCube(position, width, height, depth, color){
+    var width = width;
+    var height = height;
+    var depth = depth;
+    var closestPointGeometry = new THREE.CubeGeometry(width, height, depth);
+    var material = new THREE.MeshBasicMaterial({ color: color });
+    var closestPointMesh = new THREE.Mesh(closestPointGeometry, material);
+    closestPointMesh.position.x = position.x;
+    closestPointMesh.position.y = position.y;
+    closestPointMesh.position.z = position.z;
+    scene.add(closestPointMesh);
+}
+
 document.getElementById('webgl').appendChild(renderer.domElement);
 
-
+var axisHelper = new THREE.AxisHelper( 5 );
+scene.add( axisHelper );
 
 render();
 
@@ -129,43 +194,3 @@ function render() {
     renderer.render(scene, camera);
 }
 
-
-
-var rotObjectMatrix;
-function rotateAroundObjectAxis(object, axis, radians) {
-    rotObjectMatrix = new THREE.Matrix4();
-    rotObjectMatrix.makeRotationAxis(axis.normalize(), radians);
-
-    // old code for Three.JS pre r54:
-    // object.matrix.multiplySelf(rotObjectMatrix);      // post-multiply
-    // new code for Three.JS r55+:
-    object.matrix.multiply(rotObjectMatrix);
-
-    // old code for Three.js pre r49:
-    // object.rotation.getRotationFromMatrix(object.matrix, object.scale);
-    // old code for Three.js r50-r58:
-    // object.rotation.setEulerFromRotationMatrix(object.matrix);
-    // new code for Three.js r59+:
-    object.rotation.setFromRotationMatrix(object.matrix);
-}
-
-var rotWorldMatrix;
-// Rotate an object around an arbitrary axis in world space       
-function rotateAroundWorldAxis(object, axis, radians) {
-    rotWorldMatrix = new THREE.Matrix4();
-    rotWorldMatrix.makeRotationAxis(axis.normalize(), radians);
-
-    // old code for Three.JS pre r54:
-    //  rotWorldMatrix.multiply(object.matrix);
-    // new code for Three.JS r55+:
-    rotWorldMatrix.multiply(object.matrix);                // pre-multiply
-
-    object.matrix = rotWorldMatrix;
-
-    // old code for Three.js pre r49:
-    // object.rotation.getRotationFromMatrix(object.matrix, object.scale);
-    // old code for Three.js pre r59:
-    // object.rotation.setEulerFromRotationMatrix(object.matrix);
-    // code for r59+:
-    object.rotation.setFromRotationMatrix(object.matrix);
-}
